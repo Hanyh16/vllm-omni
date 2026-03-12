@@ -811,6 +811,22 @@ async def benchmark(args):
 
     pbar.close()
 
+    # Print warmup results for debugging
+    if warmup_pairs:
+        print(f"\nWarmup results:")
+        for i, (wreq, wout) in enumerate(warmup_pairs):
+            status = "OK" if wout.success else "FAILED"
+            print(f"  Warmup {i}: {status}, latency={wout.latency:.4f}s, error={wout.error!r}")
+
+    # Print failed request errors for debugging
+    error_outputs = [o for o in outputs if not o.success]
+    if error_outputs:
+        print(f"\nFailed requests ({len(error_outputs)}/{len(outputs)}):")
+        for i, o in enumerate(error_outputs[:5]):  # Show first 5 errors
+            print(f"  [{i}] error={o.error!r}")
+        if len(error_outputs) > 5:
+            print(f"  ... and {len(error_outputs) - 5} more failures")
+
     # Calculate metrics
     metrics = calculate_metrics(outputs, total_duration, requests_list, args, args.slo)
 

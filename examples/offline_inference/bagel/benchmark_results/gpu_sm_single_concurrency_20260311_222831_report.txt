@@ -1,0 +1,32 @@
+============================================================
+  GPU SM Utilization Analysis
+  Source: /mnt/ceph-hz1-csp/yunhaohan/vllm-omni/examples/offline_inference/bagel/benchmark_results/gpu_sm_single_concurrency_20260311_222831.csv
+  GPUs:   [0, 1]
+============================================================
+
+--- GPU 0 (Stage: AR/LLM) ---
+  Samples:               330
+  Overall avg SM:        73.9%
+  Active samples:        325/330 (98.5%)
+  Active avg SM:         75.0%
+  Active min/max SM:     27% / 99%
+
+--- GPU 1 (Stage: DiT/Diffusion) ---
+  Samples:               330
+  Overall avg SM:        0.0%
+  Active samples:        0/330 (0.0%)
+
+--- Pipeline Phase Analysis ---
+  Sample pairs:          330
+  Both GPU active:          0/330 (  0.0%)  <- pipeline overlap
+  GPU 0 only (AR):       325/330 ( 98.5%)  <- AR prefill, DiT idle
+  GPU 1 only (DiT):        0/330 (  0.0%)  <- DiT denoising, AR idle
+  Both idle:                5/330 (  1.5%)
+
+============================================================
+  Key Findings
+============================================================
+  * GPU 0 busy 98.5% of time (AR stage)
+  * GPU 1 busy 0.0% of time (DiT stage)
+  * Pipeline overlap: 0.0% of time
+  * Bottleneck: AR (GPU 0)

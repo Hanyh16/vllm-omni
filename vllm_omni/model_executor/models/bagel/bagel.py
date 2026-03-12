@@ -41,6 +41,22 @@ from vllm.multimodal.processing import (
 )
 from vllm.transformers_utils.processors.bagel import BagelProcessor
 
+# Monkey-patch vllm's BagelProcessingInfo to filter out target_h/target_w
+# which are incompatible with newer transformers ProcessorMixin.__init__
+try:
+    from vllm.model_executor.models.bagel import BagelProcessingInfo as _VllmBagelProcessingInfo
+
+    _orig_get_hf_processor = _VllmBagelProcessingInfo.get_hf_processor
+
+    def _patched_get_hf_processor(self, **kwargs):
+        kwargs.pop("target_h", None)
+        kwargs.pop("target_w", None)
+        return _orig_get_hf_processor(self, **kwargs)
+
+    _VllmBagelProcessingInfo.get_hf_processor = _patched_get_hf_processor
+except Exception:
+    pass  # Silently ignore if vllm version doesn't have this class
+
 from vllm_omni.diffusion.models.bagel.autoencoder import (
     AutoEncoderParams,
     DiagonalGaussian,
@@ -87,7 +103,13 @@ class OmniBagelProcessingInfo(BaseProcessingInfo):
         return {"image": 1, "img2img": 1}
 
     def get_hf_processor(self, **kwargs: object):
-        return self.ctx.get_hf_processor(OmniBagelProcessor, **kwargs)
+        # Filter out target_h/target_w - these are for prompt processing,
+        # not processor initialization (incompatible with transformers ProcessorMixin)
+        filtered_kwargs = {
+            k: v for k, v in kwargs.items()
+            if k not in ("target_h", "target_w")
+        }
+        return self.ctx.get_hf_processor(OmniBagelProcessor, **filtered_kwargs)
 
     def get_hf_config(self):
         config = super().get_hf_config()
